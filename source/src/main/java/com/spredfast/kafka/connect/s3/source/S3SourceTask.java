@@ -19,6 +19,7 @@ import java.util.regex.Pattern;
 
 import org.apache.kafka.connect.data.SchemaAndValue;
 import org.apache.kafka.connect.errors.ConnectException;
+import org.apache.kafka.connect.header.ConnectHeaders;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.apache.kafka.connect.source.SourceTask;
 import org.apache.kafka.connect.storage.Converter;
@@ -212,6 +213,9 @@ public class S3SourceTask extends SourceTask {
 				continue;
 			}
 
+			ConnectHeaders headers = new ConnectHeaders();
+			headers.addLong("offset", record.offset().getOffset());
+
 			// we know the reader returned bytes so, we can cast the key+value and use a converter to
 			// generate the "real" source record
 			Optional<SchemaAndValue> key = keyConverter.map(c -> c.toConnectData(topic, record.key()));
@@ -219,7 +223,7 @@ public class S3SourceTask extends SourceTask {
 			results.add(new SourceRecord(record.file().asMap(), record.offset().asMap(), topic,
 				record.partition(),
 				key.map(SchemaAndValue::schema).orElse(null), key.map(SchemaAndValue::value).orElse(null),
-				value.schema(), value.value()));
+				value.schema(), value.value(), null, headers));
 		}
 
 		log.debug("{} returning {} records.", name(), results.size());
